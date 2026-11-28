@@ -1,0 +1,14 @@
+{
+  "repo": "ekimbap/reparadise-web-assets",
+  "tag": "web-0ffb8e585243",
+  "files": {
+    "index.pck": {
+      "size": 97020512,
+      "sha256": "9d2992bb7717023e0e5aac452eed6a63120f27c5b07cb6198f02ee21667793c5"
+    },
+    "index.wasm": {
+      "size": 39514754,
+      "sha256": "fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0"
+    }
+  }
+}

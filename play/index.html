@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en"><head>
+<base href="../">
+<script>
+window.RP_MULTIPLAYER_ENABLED = false;
+window.RP_MATCH_WS_URL = "";
+window.RP_ASSET_TAG = "web-0ffb8e585243";
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:,">
+<title>Re:Paradise</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#182a40;color:#fffaf0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+canvas{display:block;width:100%;height:100%;outline:none}
+#status{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none}
+#rp-gate{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;
+  background:linear-gradient(160deg,#fff8e8 0%,#f0e7d9 55%,#c9def0 100%);color:#1d3a5f;transition:opacity .22s ease-out}
+#rp-gate.hidden{opacity:0;pointer-events:none}
+#rp-gate .sheet{max-width:660px;width:100%;max-height:100%;overflow:auto;box-sizing:border-box;background:#fffaf0;border:2px solid #c9a560;border-radius:14px;
+  box-shadow:0 18px 48px rgba(20,42,74,.22),inset 0 0 0 6px #fffaf0,inset 0 0 0 7px rgba(201,165,96,.55);padding:30px 38px 28px;text-align:center}
+#rp-gate .badge{display:inline-block;padding:5px 16px;border-radius:999px;background:#f3e4c7;border:1px solid #c9a560;color:#7a5413;font-size:12px;font-weight:700;letter-spacing:.08em}
+#rp-gate h1{margin:14px 0 10px;font:700 26px/1.2 Georgia,"Times New Roman",serif;letter-spacing:.04em;color:#1d3a5f}
+#rp-gate .rule{width:220px;height:1px;margin:0 auto 16px;background:linear-gradient(90deg,transparent,#c9a560,transparent)}
+#rp-gate p{text-align:left;font-size:15px;line-height:1.55;color:#2b4363;margin:0 0 12px}
+#rp-gate .track{margin:16px 0 8px;background:#f0e7d9;border-radius:999px;height:10px;overflow:hidden;border:1px solid rgba(201,165,96,.55)}
+#rp-gate .bar{height:100%;width:2%;background:linear-gradient(90deg,#c9a560,#e8c98a);transition:width .15s linear}
+#rp-gate .note{font-size:13px;color:#52627a;margin-bottom:14px;min-height:18px}
+#rp-gate button{appearance:none;cursor:pointer;padding:12px 32px;border-radius:9px;border:2px solid #c9a560;background:#f3e4c7;color:#1d3a5f;
+  font-weight:700;font-size:16px;letter-spacing:.04em}
+#rp-gate button:hover{background:#fff1d1}
+#rp-gate button:disabled{cursor:default;opacity:.75}
+</style></head><body>
+<canvas id="game" tabindex="0"></canvas><div id="status" role="status">Loading Re:Paradise…</div>
+<div id="rp-gate" role="dialog" aria-modal="true" aria-labelledby="rp-gate-title"><div class="sheet">
+  <div class="badge">PRE-RELEASE DEMO BUILD &middot; WORK IN PROGRESS</div>
+  <h1 id="rp-gate-title">Development Preview</h1>
+  <div class="rule"></div>
+  <p>Welcome to an early playable demo of <strong>Re:Paradise</strong>. This build is unfinished and does not represent the final look, performance or features of the game.</p>
+  <p>Game systems, card effects, balance, artwork, interface, audio and online features are still being worked on and may change substantially in future updates and at full release.</p>
+  <p>You may run into unfinished visuals, temporary art, bugs, or saved decks being reset between updates. Thank you for playing and helping shape Re:Paradise.</p>
+  <div class="track" aria-hidden="true"><div class="bar" id="rp-bar"></div></div>
+  <div class="note" id="rp-note">Loading the game…</div>
+  <button type="button" id="rp-continue">I UNDERSTAND &mdash; CONTINUE</button>
+</div></div>
+<script>
+// Enforce low-latency interactive Web Audio scheduling (~15ms) across Chromium/WebKit/Firefox
+(function() {
+  const NativeAC = window.AudioContext || window.webkitAudioContext;
+  if (!NativeAC) return;
+  const WrappedAC = function(opts) {
+    const merged = Object.assign({ latencyHint: 'interactive' }, opts || {});
+    const ctx = new NativeAC(merged);
+    window.__rpAudioContexts = window.__rpAudioContexts || [];
+    window.__rpAudioContexts.push(ctx);
+    return ctx;
+  };
+  WrappedAC.prototype = NativeAC.prototype;
+  Object.setPrototypeOf(WrappedAC, NativeAC);
+  window.AudioContext = WrappedAC;
+  if (window.webkitAudioContext) window.webkitAudioContext = WrappedAC;
+})();
+</script>
+<script src="deck_qr.js"></script>
+<script src="index.js"></script><script>
+const game = document.getElementById('game');
+const status = document.getElementById('status');
+const gate = document.getElementById('rp-gate');
+const bar = document.getElementById('rp-bar');
+const note = document.getElementById('rp-note');
+const button = document.getElementById('rp-continue');
+let started = false, accepted = false;
+function unlockAudio() {
+  if (window.__rpAudioContexts) {
+    for (const ctx of window.__rpAudioContexts) {
+      if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    }
+  }
+}
+function closeGate() {
+  if (!started || !accepted || !gate.isConnected) return;
+  unlockAudio();
+  gate.classList.add('hidden');
+  setTimeout(() => { gate.remove(); game.focus(); }, 240);
+}
+button.addEventListener('click', () => {
+  accepted = true;
+  unlockAudio();
+  if (!started) { button.textContent = 'STARTING ONCE LOADED…'; button.disabled = true; }
+  closeGate();
+});
+const BUILD_ID = "9d2992bb7717023e";
+const BIG_FILES = ['index.pck', 'index.wasm'];
+const REMOTE_ASSET_BASE = "https://reparadise-browser-pvp.onrender.com/";
+const networkFetch = window.fetch.bind(window);
+if ('caches' in window && BUILD_ID) {
+  caches.open('reparadise-web').then(async (store) => {
+    for (const req of await store.keys()) {
+      try {
+        const u = new URL(req.url);
+        if (u.searchParams.get('build') !== BUILD_ID) await store.delete(req);
+      } catch (_) {}
+    }
+  }).catch(() => {});
+}
+window.fetch = async (input, init) => {
+  const rawUrl = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+  const name = rawUrl ? rawUrl.split('?')[0].split('/').pop() : '';
+  if (!BUILD_ID || !BIG_FILES.includes(name)) return networkFetch(input, init);
+  const baseUrl = REMOTE_ASSET_BASE ? (REMOTE_ASSET_BASE + name) : rawUrl.split('?')[0];
+  const bustUrl = `${baseUrl}?v=${BUILD_ID}`;
+  const fetchOpts = Object.assign({}, init || {}, { cache: 'reload' }, REMOTE_ASSET_BASE ? { mode: 'cors' } : {});
+  if (!('caches' in window)) return networkFetch(bustUrl, fetchOpts);
+  const key = `${name}?build=${BUILD_ID}`;
+  try {
+    const store = await caches.open('reparadise-web');
+    const kept = await store.match(key);
+    if (kept) return kept;
+    const response = await networkFetch(bustUrl, fetchOpts);
+    if (response.ok) {
+      store.put(key, response.clone()).then(async () => {
+        for (const old of await store.keys()) {
+          try {
+            const url = new URL(old.url);
+            if (url.pathname.endsWith('/' + name) && url.searchParams.get('build') !== BUILD_ID) await store.delete(old);
+          } catch (_) {}
+        }
+      }).catch(() => {});
+    }
+    return response;
+  } catch (error) {
+    return networkFetch(bustUrl, fetchOpts);
+  }
+};
+const mainPackUrl = REMOTE_ASSET_BASE ? (REMOTE_ASSET_BASE + 'index.pck') : 'index.pck';
+const engine = new Engine({executable:'index', mainPack:mainPackUrl, canvas:game, canvasResizePolicy:2,
+  fileSizes: {"index.pck": 97020512, "index.wasm": 39514754}});
+engine.startGame({onProgress: (current, total) => {
+  if (total > 0) {
+    const pct = Math.max(2, Math.min(100, Math.round(current / total * 100)));
+    bar.style.width = pct + '%';
+    note.textContent = `Loading the game: ${(current / 1048576).toFixed(0)} / ${(total / 1048576).toFixed(0)} MB`;
+  }
+}}).then(() => {
+  started = true;
+  status.remove();
+  bar.style.width = '100%';
+  note.textContent = 'Ready.';
+  closeGate();
+}).catch(error => {
+  console.error(error);
+  status.textContent = 'The playtest could not start. ' + error.message;
+  note.textContent = 'The playtest could not start. ' + error.message;
+});
+</script></body></html>
